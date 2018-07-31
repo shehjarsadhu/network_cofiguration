@@ -1,7 +1,5 @@
 # network_cofiguration
-This repository consists of a shell script to configure a network using raspberry pi. 
-
-
+This repository consists of a shell script to configure a network using raspberry pi. I have also added a document that steps through the actual process of setting up wifi and a static IP address on raspberry pi0. 
 
 ### Introduction
 
