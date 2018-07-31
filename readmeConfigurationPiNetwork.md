@@ -1,7 +1,8 @@
 
 # Description:
 
-This document consists of how to set up the wifi and static ip addredd on a raspberry pi 0.
+This document consists of how to set up the wifi and static ip addredd on a raspberry pi 0. This set up uses raspbian stretch no GUI operating system version of the raspberry pi.
+Download avalible here https://www.raspberrypi.org/downloads/raspbian/
 
 #### Part 1:  Setting up wifi with raspberry pi0
 
