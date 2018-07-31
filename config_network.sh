@@ -3,7 +3,6 @@
 # Gets the sssid and network password from the user.
 #takes ssid and psk as arguments.
 function get_networkInfo(){
-        echo $ssid $psk
         echo "Please enter a network name: "
         read ssid
         echo "Please enter the network password: "
@@ -80,7 +79,7 @@ function main(){
                 echo "Please enter y or n."
                 read boolean
                 #get the network info again
-                get_networkInfo Cooliance 1234345656787890
+                get_networkInfo
                  #restarts the network without having to reboot.
                 restartNetwork
                 #gets the IP address of the pi and stores it in a variable host.
