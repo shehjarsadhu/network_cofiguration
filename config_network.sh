@@ -1,92 +1,135 @@
 #!/bin/bash
+function usage(){
 
-# Gets the sssid and network password from the user.
-#takes ssid and psk as arguments.
-function get_networkInfo(){
-        echo "Please enter a network name: "
-        read ssid
-        echo "Please enter the network password: "
-        read psk
-        #Replaces the text after the wpa-ssid and wpa-psk with user entered information.
-        #sed: stream editor
-        # s: substituting
-        # ^: Begning of the line.
-        #$: End of the line
-        # -ie:
-        # g: globaly
-        sudo  sed -ie "s/^      ssid=.*$/       ssid=\"${ssid}\"/g" /etc/wpa_supplicant/wpa_supplicant.conf
-        sudo  sed -ie "s/^   psk=.*$/        psk=\"${psk}\"/g"  /etc/wpa_supplicant/wpa_supplicant.conf
-        # debug statement should be removed..
-        sudo cat /etc/wpa_supplicant/wpa_supplicant.conf
+  echo "-w <ssid>,<psk> ; -s <staticIP> , <netamask> ,<router> ; -ma <shows mac address> ; -IP<shows current IP >"
+
 }
 
-#restarts the dhcp/for static IP without having to reboot.
-function restartNetwork(){
-        sudo systemctl daemon-reload
-        sudo systemctl restart dhcpcd
+function restart_network() {
+  echo "restarting network"
+  sudo systemctl daemon-reload
+  sudo systemctl restart dhcpcd
+}   # end of restartNetwork
+
+function set_wlan() {
+  ssid=$1
+  ssid_passwd=$2
+  if [[ -z "$1" ]]; then
+    echo "missing ssid"
+    usage
+    exit
+  fi
+
+  if [[ -z "$2" ]]; then
+    echo "missing ssid_passwd"
+    usage
+    exit
+  fi
+
+  echo "------------------------------"
+  echo "          SSID: " ${ssid}
+  echo " SSID Password: " ${ssid_passwd}
+  echo "------------------------------"
+  read -p " Continue? (y/N): " confirm && [[ $confirm == [Yy] ]] || exit 1
+  echo ""
+
+
+  echo "setting the ssid to: \"${ssid}\" and ssid_passwd to: \"${ssid_passwd}\""
+# add code to modify the wpa file here
+
+  #puts pre code in the supplicant file
+  printf "network={\n    ssid=\n    psk=\n}" | sudo tee /etc/wpa_supplicant/wpa_supplicant.conf
+  #puts the user entered info in the supplicant file
+  sudo  sed -ie "s/^    ssid=.*$/    ssid=\"${ssid}\"/g" /etc/wpa_supplicant/wpa_supplicant.conf
+  sudo  sed -ie "s/^    psk=.*$/    psk=\"${ssid_passwd}\"/g"  /etc/wpa_supplicant/wpa_supplicant.conf
+  restart_network
 }
 
-#gets the MAC address of the pi.
-function getMAC_address(){
-        echo "Following is your MAC address"
-        cat /sys/class/net/wlan0/address
+
+function set_staticIP() {
+  ipAddress=$1
+  netmask=$2
+  router=$3
+
+  if [[ -z "$1" ]]; then
+    echo "missing ipAddress"
+    usage
+    exit
+  fi
+
+  if [[ -z "$2" ]]; then
+    echo "missing netmask"
+    usage
+    exit
+  fi
+
+  if [[ -z "$3" ]]; then
+    echo "missing router"
+    usage
+    exit
+  fi
+  echo "------------------------------"
+  echo " IP Address: " ${ipAddress}
+  echo "    Netmask: " ${netmask}
+  echo "     Router: " ${router}
+  echo "------------------------------"
+
+  read -p " Continue? (y/N): " confirm && [[ $confirm == [Yy] ]] || exit 1
+  echo ""
+
+  echo "setting the IP to: \"${ipAddress}\", netmask to: ${netmask} and router to: \"${router}\""
+  #add code to modify the dhcp file
+  #add code to modify the dhcp file
+  #puts pre code in the supplicant file
+ printf  "static ip_address=\nstatic routers=\nstatic domain_name_servers=\n " | sudo tee /etc/dhcpcd.co$
+ #puts the user entered info in the dhcpcd file
+ sudo  sed -ie "s/^static ip_address=.*$/static ip_address=$ipAddress/g" /etc/dhcpcd.conf
+ sudo  sed -ie "s/^static routers=.*$/static routers=$router/g"  /etc/dhcpcd.conf
+ sudo  sed -ie "s/^static domain_name_servers=.*$/static domain_name_servers=8.8.8.8/g"  /etc/dhcpcd.conf
+ restart_network
 }
 
-#gets the IP address of the pi and checks weather it actually has one or not.
-function get_IPaddress(){
-        #Following tells the user the ip address of the machine.
-        hostN="$(hostname -I)"
-        # -z check weather a variable is empty or not.
-        if [ -z "$hostN" ]
+function show_macAddress() {
+  echo "show the current MAC address"
+  cat /sys/class/net/wlan0/address
+}
+
+function show_staticIP() {
+  IP=$(hostname -I)
+  echo "currently configured static IP address: $IP"
+}
+
+  while getopts s:w:ma:IP param ; do
+    case $param in
+    -s)
+        echo "-s is trigered"
+        read -p  "what to set a staticip? (y/n)" b
+        # read b
+        if [[ $b == "y" ]]
         then
-                echo "Sorry something went wrong please try again Hostname is empty"
-        #if the hostname has assigned a IP address ==> pi is on the internet.
-        else
-                #Perint the IP address
-                echo "You are on the network."
-                echo "YouR IP address  is: "
-                echo "${hostN}"
+            set_staticIP  192.168.1.100 255.255.255.0 192.168.1.1
+        elif [[ $b == "n" ]]
+        then
+              exit
         fi
-}
-
-#This function starts the execution of the above.
-function start(){
-        #restarts the network without having to reboot.
-        restartNetwork
-        #gets the IP address of the pi and stores it in a variable host.
-        get_IPaddress
-        #Following will display the MAC Address of the raspberry pi
-        getMAC_address
-}
-
-function main(){
-        #gets the network information.
-        get_networkInfo
-        #Double check weather the user entered the right information or not
-        echo "Is the above correct? enter (y)for yes (n)for no"
-        read boolean
-
-        if [[ $boolean == "y" ]]
+        ;;
+      w)
+        echo "-w is triggered"
+        read -p "Want to connect to wifi? (y/n)" bool
+        if [[ $bool == "y" ]]
         then
-                start
-        elif [[ $boolean == "n" ]]
+            set_wlan Cooliance 1234345656787890
+        elif [[ $bool == "n" ]]
         then
-                #get the network info again
-                get_networkInfo
-                start
-        #makes sure that the user entered a valid answer to the qustionw.
-        else
-                echo "Please enter y or n."
-                read boolean
-                #get the network info again
-                get_networkInfo
-                 #restarts the network without having to reboot.
-                restartNetwork
-                #gets the IP address of the pi and stores it in a variable host.
-                get_IPaddress
-                #Following will display the MAC Address of the raspberry pi
-                getMAC_address
+              exit
         fi
-}
-#Calling the main function to set up.
-main
+        ;;
+      ma)
+        echo "-ma is triggered"
+        show_macAddress
+        ;;
+      IP)
+        echo "-IP is triggered"
+        show_staticIP
+    esac
+  done
