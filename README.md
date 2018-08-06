@@ -3,7 +3,7 @@ This repository consists of a shell script to configure a network using raspberr
 
 ### Introduction
 
-This document consists of how to use the bash script
+This document consists of how to use the shell script
 
 ##### Note:
 Everything we do with this script is through the computer terminal so go ahead and fire up your terminal.
